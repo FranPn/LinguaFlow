@@ -30,6 +30,7 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? "Data Source=linguaflow.db";
 builder.Services.AddDbContext<LinguaFlowDbContext>(options => options.UseSqlite(connectionString));
 builder.Services.AddScoped<ISessionRepository, EfSessionRepository>();
+builder.Services.AddScoped<IProgressRepository, EfProgressRepository>();
 
 var app = builder.Build();
 
@@ -93,6 +94,13 @@ app.MapPost("/api/session/{id}/turn", async (Guid id, string message, IChatClien
     await sessionRepository.AddTurnsAsync(id, [userTurn, assistantTurn], cancellationToken);
 
     return Results.Ok(new { reply = response.Text, corrections });
+});
+
+// Tracking progressi aggregato su tutte le sessioni (non sulla singola sessione come sopra).
+app.MapGet("/api/progress", async (string? targetLanguage, IProgressRepository progressRepository, CancellationToken cancellationToken) =>
+{
+    var summary = await progressRepository.GetSummaryAsync(targetLanguage, cancellationToken);
+    return Results.Ok(summary);
 });
 
 app.Run();

@@ -12,8 +12,8 @@ inglese e svedese con correzioni strutturate e tracking progressi nel tempo.
 - **LLM**: Claude Sonnet 5 via Anthropic API (chiave in user-secrets, key `Anthropic:ApiKey`)
 - **STT/TTS**: Azure Speech (non ancora integrato) — scelto per coerenza con percorso
   di certificazione AI-103 dell'utente
-- **Persistenza**: SQLite via EF Core (non ancora integrato, per ora store in-memory
-  con ConcurrentDictionary)
+- **Persistenza**: SQLite via EF Core — fatto (LinguaFlowDbContext, Sessions/Turns/
+  Corrections come owned entities, migration applicata a startup)
 - **Frontend**: PWA (Angular o React, non ancora iniziato) — installabile su home
   screen mobile, usabile "in giro" senza dipendere da un PC acceso, niente
   pubblicazione su store
@@ -51,15 +51,20 @@ su correzioni inventate/mancanti.
   o tenere solo per debug)
 - `POST /api/session/start?targetLanguage=...&topic=...` — crea sessione, ritorna sessionId
 - `POST /api/session/{id}/turn?message=...` — invia turno, ritorna { reply, corrections }
+- `GET /api/progress?targetLanguage=...` — riepilogo aggregato su tutte le sessioni
+  (opzionalmente filtrato per lingua): totale sessioni/turni/correzioni, conteggio
+  per categoria d'errore, trend correzioni per sessione nel tempo
 
 ## Cosa manca (prossimi step)
-1. **CorrectionAgent**: già progettato (prompt sopra), verificare che il parsing JSON
-   sia robusto (try/catch già previsto per output malformato dell'LLM)
-2. **Persistenza reale**: sostituire ConcurrentDictionary in-memory con SQLite + EF Core
-   — sessioni, turni, correzioni ricorrenti per tracking progressi nel tempo
+1. ~~CorrectionAgent~~ — fatto: parsing JSON robusto con try/catch su chiamata LLM
+   e su deserializzazione, estrazione tollerante a wrapping markdown
+2. ~~Persistenza reale~~ — fatto: SQLite + EF Core, vedi sopra
 3. **Integrazione Azure Speech**: STT per input vocale, TTS per risposta vocale del tutor
-4. **Tracking progressi**: aggregare correzioni ricorrenti per categoria/tipo errore
-   nel tempo, non solo per singola sessione
+4. ~~Tracking progressi~~ — fatto: `IProgressRepository`/`EfProgressRepository` in
+   Infrastructure, aggregazione in memoria su sessioni/turni/correzioni caricati da EF
+   (owned collections annidate, più semplice che tradurre GroupBy in SQL). Esposto da
+   `GET /api/progress`. Possibili estensioni future: filtro per intervallo di date,
+   trend raggruppato per settimana invece che per sessione singola.
 5. **Frontend PWA**: UI chat con pulsante microfono, installabile su home screen,
    chiama gli endpoint sopra
 6. **Gestione latenza percepita**: la pipeline STT→LLM→TTS deve stare sotto 1-2
