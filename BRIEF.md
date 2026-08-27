@@ -65,8 +65,19 @@ su correzioni inventate/mancanti.
    (owned collections annidate, più semplice che tradurre GroupBy in SQL). Esposto da
    `GET /api/progress`. Possibili estensioni future: filtro per intervallo di date,
    trend raggruppato per settimana invece che per sessione singola.
-5. **Frontend PWA**: UI chat con pulsante microfono, installabile su home screen,
-   chiama gli endpoint sopra
+5. ~~Frontend PWA~~ — fatto: `src/LinguaFlow.Web` (React + Vite + TS, vite-plugin-pwa).
+   Setup screen (lingua/argomento) → ChatScreen (bolle utente/assistente, correzioni
+   inline sotto il turno utente, pulsante microfono disabilitato in attesa del punto 3)
+   → ProgressScreen (chiama `/api/progress`). Client fetch in `src/api/client.ts`, tipi
+   in `src/api/types.ts` che rispecchiano i record C#. CORS aggiunto in Program.cs per
+   `http://localhost:5173` (dev server Vite). `.env.local` con `VITE_API_URL` (default
+   `http://localhost:5204`, il profilo http di default di `dotnet run`).
+   Bug fix collaterale in `EfSessionRepository.AddTurnsAsync`: i turni/correzioni hanno
+   Id assegnato lato client (`Guid.NewGuid()` nel record), quindi EF Core li marcava
+   Modified invece di Added quando raggiunti per fixup dalla navigation collection →
+   `DbUpdateConcurrencyException` (UPDATE invece di INSERT, 0 righe interessate) al
+   primo turno di ogni sessione. Fix: `db.Entry(entity).State = EntityState.Added`
+   esplicito su turni e correzioni prima di `SaveChangesAsync`.
 6. **Gestione latenza percepita**: la pipeline STT→LLM→TTS deve stare sotto 1-2
    secondi per sentirsi naturale in conversazione vocale — da tenere presente nel
    design degli endpoint audio

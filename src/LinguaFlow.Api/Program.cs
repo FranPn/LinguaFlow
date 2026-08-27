@@ -11,6 +11,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Consente al frontend PWA (Vite dev server) di chiamare l'API in sviluppo.
+const string WebClientCorsPolicy = "WebClient";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(WebClientCorsPolicy, policy =>
+    {
+        policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 var anthropicApiKey = builder.Configuration["Anthropic:ApiKey"]
     ?? throw new InvalidOperationException("Anthropic:ApiKey non configurata. Usa: dotnet user-secrets set \"Anthropic:ApiKey\" \"...\"");
 
@@ -48,6 +60,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors(WebClientCorsPolicy);
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
