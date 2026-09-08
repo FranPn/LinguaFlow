@@ -1,50 +1,50 @@
 # LinguaFlow
 
-Tutor linguistico conversazionale con correzioni grammaticali in tempo reale, costruito come progetto portfolio personale — un esperimento di architettura agentica con Semantic Kernel e Claude API.
+Conversational language tutor with real-time grammar correction, built as a personal portfolio project — an experiment in agentic architecture with Semantic Kernel and the Claude API.
 
-Nato dal tentativo di capire come funzionano app come [Fluently](https://play.google.com/store/apps/details?id=app.getfluently.app): stessa idea di base (conversazione AI + correzioni), costruita da zero per esercitare Semantic Kernel, .NET e progettazione di sistemi multi-agente.
+Born out of trying to understand how apps like [Fluently](https://play.google.com/store/apps/details?id=app.getfluently.app) work: same core idea (AI conversation + corrections), built from scratch to practice Semantic Kernel, .NET, and multi-agent system design.
 
-## Cosa fa
+## What it does
 
-- Conversazione libera in inglese o svedese su un argomento a scelta
-- Correzioni grammaticali strutturate su ogni turno, senza interrompere il flusso della conversazione
-- Tracking dei progressi nel tempo: errori ricorrenti per categoria, trend per sessione
+- Free-form conversation in English or Swedish on a topic of choice
+- Structured grammar corrections on every turn, without interrupting the flow of conversation
+- Progress tracking over time: recurring errors by category, per-session trends
 
-## Perché due agenti, non uno
+## Why two agents, not one
 
-Un unico prompt che deve *sia* conversare naturalmente *sia* correggere ogni errore tende a fallire in uno dei due compiti: o interrompe il flusso per correggere, o "dimentica" di farlo mentre è concentrato sulla risposta. LinguaFlow separa le due responsabilità in due agenti chiamati in parallelo sullo stesso turno:
+A single prompt that both converses naturally *and* corrects every mistake tends to fail at one of the two: it either breaks the flow to correct, or "forgets" to correct while focused on responding well. LinguaFlow splits these responsibilities into two agents called in parallel on the same turn:
 
-- **ConversationAgent** — conversa nella lingua target, fa domande di follow-up, non corregge esplicitamente
-- **CorrectionAgent** — riceve solo l'ultimo messaggio utente, restituisce un array JSON di correzioni strutturate (originale, corretta, categoria, spiegazione)
+- **ConversationAgent** — converses in the target language, asks follow-up questions, doesn't correct explicitly
+- **CorrectionAgent** — receives only the latest user message, returns a structured JSON array of corrections (original, corrected, category, explanation)
 
 ## Stack
 
-| Layer | Tecnologia |
+| Layer | Technology |
 |---|---|
 | Backend | .NET 8, ASP.NET Core Minimal API |
-| Orchestrazione LLM | Semantic Kernel + [Anthropic SDK ufficiale](https://www.nuget.org/packages/Anthropic) |
-| Modello | Claude Sonnet 5 |
-| Persistenza | SQLite + EF Core (owned entities per Session → Turns → Corrections) |
-| Frontend | React + TypeScript + Vite, PWA installabile |
+| LLM orchestration | Semantic Kernel + [official Anthropic SDK](https://www.nuget.org/packages/Anthropic) |
+| Model | Claude Sonnet 5 |
+| Persistence | SQLite + EF Core (owned entities for Session → Turns → Corrections) |
+| Frontend | React + TypeScript + Vite, installable PWA |
 
-## Architettura
+## Architecture
 
 ```
 src/
-├── LinguaFlow.Core/            → Dominio: ConversationSession, Correction, ISessionRepository, IProgressRepository (nessuna dipendenza esterna)
-├── LinguaFlow.Infrastructure/  → Agenti (Semantic Kernel), EF Core, implementazioni repository
-├── LinguaFlow.Api/             → Minimal API, DI, endpoint HTTP
+├── LinguaFlow.Core/            → Domain: ConversationSession, Correction, ISessionRepository, IProgressRepository (no external dependencies)
+├── LinguaFlow.Infrastructure/  → Agents (Semantic Kernel), EF Core, repository implementations
+├── LinguaFlow.Api/             → Minimal API, DI, HTTP endpoints
 └── LinguaFlow.Web/             → React PWA
 ```
 
-Separazione Core/Infrastructure/Api rigorosa: il dominio non conosce Semantic Kernel, EF Core, o alcun dettaglio implementativo — dipende solo dalle proprie interfacce.
+Strict Core/Infrastructure/Api separation: the domain layer knows nothing about Semantic Kernel, EF Core, or any implementation detail — it only depends on its own interfaces.
 
-## Avvio in locale
+## Running locally
 
 **Backend**
 ```bash
 cd src/LinguaFlow.Api
-dotnet user-secrets set "Anthropic:ApiKey" "la-tua-chiave"
+dotnet user-secrets set "Anthropic:ApiKey" "your-key-here"
 dotnet run
 ```
 
@@ -55,14 +55,14 @@ npm install
 npm run dev
 ```
 
-## Stato del progetto
+## Project status
 
-- [x] Conversazione + correzioni grammaticali
-- [x] Persistenza SQLite
-- [x] Tracking progressi aggregato
-- [x] Frontend PWA
-- [ ] Input/output vocale (Azure Speech STT/TTS)
-- [ ] Valutazione pronuncia (Azure Pronunciation Assessment) con esercizi mirati
-- [ ] Hardening: autenticazione, rate limiting, validazione input
+- [x] Conversation + grammar corrections
+- [x] SQLite persistence
+- [x] Aggregated progress tracking
+- [x] PWA frontend
+- [ ] Voice input/output (Azure Speech STT/TTS)
+- [ ] Pronunciation assessment (Azure Pronunciation Assessment) with targeted exercises
+- [ ] Hardening: authentication, rate limiting, input validation
 
-Progetto in sviluppo attivo, costruito senza fretta come esercizio di architettura più che come prodotto finito.
+Actively in development, built without rushing as an architecture exercise more than a finished product.
