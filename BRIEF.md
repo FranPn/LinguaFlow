@@ -82,6 +82,24 @@ su correzioni inventate/mancanti.
    secondi per sentirsi naturale in conversazione vocale — da tenere presente nel
    design degli endpoint audio
 
+## Sicurezza e hardening
+App attualmente uso solo locale, nessuna autenticazione: hardening applicato per
+principio di proporzionalità (protezione da uso eccessivo accidentale, non da
+attaccanti). Rivalutare se/quando l'app verrà esposta oltre l'uso locale.
+
+- ~~Rate limiting~~ — fatto: `Microsoft.AspNetCore.RateLimiting` nativo (nessun
+  pacchetto NuGet aggiuntivo), `FixedWindowLimiter` 10 richieste/minuto, QueueLimit 0,
+  429 su superamento. Applicato a `POST /api/session/start` e
+  `POST /api/session/{id}/turn` (gli unici due che chiamano l'LLM o creano stato).
+- ~~Validazione input base~~ — fatto: `POST /api/session/{id}/turn` rifiuta con 400
+  se `message` è vuoto/whitespace o supera 1000 caratteri, prima di chiamare
+  `ITurnProcessingService` (niente chiamata LLM sprecata su input invalido).
+- **Autenticazione** — rimandata. Necessaria solo se l'app smette di girare
+  esclusivamente in locale (es. deploy raggiungibile da rete esterna).
+- **HTTPS enforcement** — rimandato. `UseHttpsRedirection()` già presente ma non
+  forzato/HSTS; da irrobustire solo in caso di pubblicazione reale (oggi dev locale
+  su http è normale e non un rischio).
+
 ## Vincoli/preferenze dell'utente
 - Sviluppo su WSL2 (Ubuntu), progetto in `~/LinguaFlow` (filesystem Linux nativo,
   NON `/mnt/c/...` per performance)
