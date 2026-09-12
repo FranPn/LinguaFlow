@@ -43,6 +43,7 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
 builder.Services.AddDbContext<LinguaFlowDbContext>(options => options.UseSqlite(connectionString));
 builder.Services.AddScoped<ISessionRepository, EfSessionRepository>();
 builder.Services.AddScoped<IProgressRepository, EfProgressRepository>();
+builder.Services.AddScoped<ITurnProcessingService, TurnProcessingService>();
 
 var app = builder.Build();
 
@@ -77,36 +78,12 @@ app.MapPost("/api/session/start", async (string targetLanguage, string topic, IS
     return Results.Ok(new { sessionId = session.Id });
 });
 
-app.MapPost("/api/session/{id}/turn", async (Guid id, string message, IChatClient chatClient, CorrectionAgent correctionAgent, ISessionRepository sessionRepository, CancellationToken cancellationToken) =>
+app.MapPost("/api/session/{id}/turn", async (Guid id, string message, ITurnProcessingService turnProcessingService, CancellationToken cancellationToken) =>
 {
-    var session = await sessionRepository.GetAsync(id, cancellationToken);
-    if (session is null)
-        return Results.NotFound(new { error = "Sessione non trovata" });
-
-    var chatMessages = new List<ChatMessage>
-    {
-        new(ChatRole.System, ConversationPrompts.BuildSystemPrompt(session.TargetLanguage, session.Topic))
-    };
-    chatMessages.AddRange(session.Turns.Select(t =>
-        new ChatMessage(t.Role == "user" ? ChatRole.User : ChatRole.Assistant, t.Text)));
-    chatMessages.Add(new ChatMessage(ChatRole.User, message));
-
-    // ConversationAgent e CorrectionAgent lavorano sullo stesso turno utente in parallelo:
-    // il primo genera la risposta conversazionale (senza correggere), il secondo analizza
-    // SOLO l'ultimo messaggio dello studente per estrarre correzioni strutturate.
-    // Vedi BRIEF.md, "Decisione architetturale chiave: due agenti separati".
-    var conversationTask = chatClient.GetResponseAsync(chatMessages);
-    var correctionTask = correctionAgent.AnalyzeAsync(session.TargetLanguage, message);
-    await Task.WhenAll(conversationTask, correctionTask);
-
-    var response = conversationTask.Result;
-    var corrections = correctionTask.Result;
-
-    var userTurn = new ConversationTurn("user", message, DateTime.UtcNow) { Corrections = corrections };
-    var assistantTurn = new ConversationTurn("assistant", response.Text, DateTime.UtcNow);
-    await sessionRepository.AddTurnsAsync(id, [userTurn, assistantTurn], cancellationToken);
-
-    return Results.Ok(new { reply = response.Text, corrections });
+    var result = await turnProcessingService.ProcessTurnAsync(id, message, cancellationToken);
+    return result is null
+        ? Results.NotFound(new { error = "Sessione non trovata" })
+        : Results.Ok(new { reply = result.Reply, corrections = result.Corrections });
 });
 
 // Tracking progressi aggregato su tutte le sessioni (non sulla singola sessione come sopra).
