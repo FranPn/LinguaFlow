@@ -61,8 +61,10 @@ npm run dev
 - [x] SQLite persistence
 - [x] Aggregated progress tracking
 - [x] PWA frontend
+- [x] Application service layer (clean separation between endpoints and business logic)
+- [x] Rate limiting and input validation
 - [ ] Voice input/output (Azure Speech STT/TTS)
 - [ ] Pronunciation assessment (Azure Pronunciation Assessment) with targeted exercises
-- [ ] Hardening: authentication, rate limiting, input validation
+- [ ] Authentication (deferred until the app moves beyond local use)
 
 Actively in development, built without rushing as an architecture exercise more than a finished product.
